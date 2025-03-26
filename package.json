@@ -1,20 +1,34 @@
 {
-  "name": "node-sea",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@northegg/node-sea",
+  "version": "0.0.14",
+  "description": "NodeJS SEA打包工具",
+  "main": "./src/index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node example.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.6.5",
+  "keywords": [
+    "NodeJS",
+    "SEA"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/996581176/node-sea"
+  },
+  "homepage": "https://github.com/996581176/node-sea",
+  "bugs": "https://github.com/996581176/node-sea/issues",
+  "author": "NorthEgg",
+  "license": "MIT",
   "dependencies": {
     "@vercel/ncc": "^0.38.3",
     "debug": "^4.4.0",
     "ora": "^8.2.0",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.2",
+    "edit-json-file": "^1.8.1",
+    "new-find-package-json": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/edit-json-file": "^1.7.3"
   }
 }

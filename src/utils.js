@@ -1,15 +1,13 @@
 import { stat } from "fs/promises";
-import util from "util";
 import ora from "ora";
 import { homedir } from "os";
 import { mkdir, writeFile, chmod } from "fs/promises";
-import { join } from "path";
-import debug from "debug";
-import { exec as exec_origin } from "child_process";
+import { dirname, join } from "path";
+import debug from "debug";import { find } from "new-find-package-json";
+import editJsonFile from "edit-json-file";
 import ncc from "@vercel/ncc";
 
 const log = debug("sea");
-const exec = util.promisify(exec_origin);
 
 /**
  * Check if file exists
@@ -41,7 +39,7 @@ export async function is_directory_exists(path) {
  * Show spinner while running async_callback
  * @typedef {() => Promise<any>} async_callback
  * @param {string} message
- * @param {async_callback} callback
+ * @param {async_callback} [callback]
  * @returns
  */
 export async function spinner_log(message, callback) {
@@ -91,17 +89,17 @@ export async function get_node_executable(
   }-${arch}-v${nodeVersion}-with-intl-${withIntl}${process.platform === "win32" ? ".exe" : ""}`;
   const expected_node_executable_path = join(cache_directory, node_executable_filename);
   if (await is_file_exists(expected_node_executable_path)) {
-    log(`Found cached node executable at ${expected_node_executable_path}`);
+    log(`找到缓存的节点可执行文件，在 ${expected_node_executable_path}`);
     return expected_node_executable_path;
   }
-  log(`Downloading node executable from github release or specified mirror url`);
+  log(`从 github release 或指定的镜像 url 下载节点可执行文件`);
   // download the node executable from github release or specified mirror url named NODE_SEA_NODE_MIRROR_URL
   const download_url_prefix =
     process.env.NODE_SEA_NODE_MIRROR_URL ??
     `https://github.com/liudonghua123/node-sea/releases/download/node/`;
   try {
-    const download_spinner = ora(`[ 0.00%] Downloading node executable ...`).start();
-    log(`try to download file from ${`${download_url_prefix}${node_executable_filename}`}`);
+    const download_spinner = ora(`[ 0.00%] 下载 node 可执行文件 ...`).start();
+    log(`尝试从 ${`${download_url_prefix}${node_executable_filename}`} 下载文件`);
     const response = await fetch(`${download_url_prefix}${node_executable_filename}`);
     const content_length = +(response.headers.get("Content-Length") ?? 0);
     const reader = response.body?.getReader();
@@ -142,7 +140,43 @@ export async function get_node_executable(
  * @param {string} script_entry_path 入口文件路径（包括入口文件名及扩展名）
  * @param {string} temp_dir 零时文件存放目录
  */
-export async function pack(script_entry_path, temp_dir) {
-  await exec(`ncc build ${script_entry_path} -o ${temp_dir}\\dist -t -m -C`);
-  return `${temp_dir}\\dist\\index.js`;
+export async function nccPack(script_entry_path, temp_dir) {
+  // 为ncc提供配置支持
+  const dir = dirname(script_entry_path);
+  const findPackageJson = find(dir);
+  const jsonInfo = await findPackageJson.next();
+  let file = null;
+  let typeOrigin = null;
+  if (!jsonInfo.done) {
+    file = editJsonFile(jsonInfo.value, {
+      autosave: true,
+      stringify_eol: true,
+    });
+    typeOrigin = file.get("type");
+    if (typeOrigin === "module") {
+      await spinner_log(`目标项目为 ${typeOrigin} 类型，临时修改为 commonjs 类型`, () => true);
+      file.set("type", "commonjs");
+    }
+  }
+
+  try {
+    const outputFilePath = `${temp_dir}\\index.js`;
+    const { code } = await ncc(script_entry_path, {
+      cache: false,
+      minify: true,
+      target: "es2015",
+      quiet: true,
+    });
+    await spinner_log(`执行 ncc 打包，输出 ncc 打包文件到 ${outputFilePath}`, async () => {
+      await writeFile(outputFilePath, code);
+    });
+    return outputFilePath;
+  } catch (error) {
+    throw error;
+  } finally {
+    if (typeOrigin === "module") {
+      file.set("type", "module");
+      await spinner_log(`恢复目标项目为 ${typeOrigin} 类型`, () => true);
+    }
+  }
 }
