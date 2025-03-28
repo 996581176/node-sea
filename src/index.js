@@ -106,37 +106,46 @@ export default async function sea(
   }
   // change working directory to temp_dir
   process.chdir(temp_dir);
-  /** 调用ncc打包文件 */
-  const packFilePath = await nccPack(script_entry_path, temp_dir);
-  if (!packFilePath) return;
-  // Create a configuration file building a blob that can be injected into the single executable application
-  const preparation_blob_path = join(temp_dir, "sea-prep.blob");
-  const sea_config_path = join(temp_dir, "sea-config.json");
-  const sea_config = {
-    main: packFilePath,
-    output: preparation_blob_path,
-    disableExperimentalSEAWarning,
-    useSnapshot,
-    useCodeCache,
-    assets,
-  };
-  await spinner_log(`将配置文件写入 ${sea_config_path}`, async () => {
-    await writeFile(sea_config_path, JSON.stringify(sea_config));
-  });
-  // Generate the blob to be injected
-  await spinner_log(`生成blob到 ${preparation_blob_path}`, async () => {
-    await exec(`node --experimental-sea-config "${sea_config_path}"`);
-  });
-  // Inject the blob into the copied binary by running postject
-  await spinner_log(`将 blob 注入 ${basename(executable_path)}`, async () => {
-    await exec(
-      `npx postject "${executable_path}" NODE_SEA_BLOB "${preparation_blob_path}" --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`
-    );
-  });
-  // Remove the temporary directory
-  await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
-    process.chdir(startDir);
-    await rimraf(temp_dir);
-  });
-  ora(`All done!`).succeed();
+  try {
+    /** 调用ncc打包文件 */
+    const packFilePath = await nccPack(script_entry_path, temp_dir);
+    if (!packFilePath) return;
+    // Create a configuration file building a blob that can be injected into the single executable application
+    const preparation_blob_path = join(temp_dir, "sea-prep.blob");
+    const sea_config_path = join(temp_dir, "sea-config.json");
+    const sea_config = {
+      main: packFilePath,
+      output: preparation_blob_path,
+      disableExperimentalSEAWarning,
+      useSnapshot,
+      useCodeCache,
+      assets,
+    };
+    await spinner_log(`将配置文件写入 ${sea_config_path}`, async () => {
+      await writeFile(sea_config_path, JSON.stringify(sea_config));
+    });
+    // Generate the blob to be injected
+    await spinner_log(`生成blob到 ${preparation_blob_path}`, async () => {
+      await exec(`node --experimental-sea-config "${sea_config_path}"`);
+    });
+    // Inject the blob into the copied binary by running postject
+    await spinner_log(`将 blob 注入 ${basename(executable_path)}`, async () => {
+      await exec(
+        `npx postject "${executable_path}" NODE_SEA_BLOB "${preparation_blob_path}" --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`
+      );
+    });
+    // Remove the temporary directory
+    await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+      process.chdir(startDir);
+      await rimraf(temp_dir);
+    });
+    ora("All done!").succeed();
+  } catch (error) {
+    await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+      process.chdir(startDir);
+      await rimraf(temp_dir);
+    });
+    ora("打包出错!").fail();
+    console.log(error);
+  }
 }

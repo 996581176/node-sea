@@ -24,11 +24,6 @@
     "debug": "^4.4.0",
     "ora": "^8.2.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.2",
-    "edit-json-file": "^1.8.1",
-    "new-find-package-json": "^2.0.0"
-  },
-  "devDependencies": {
-    "@types/edit-json-file": "^1.7.3"
+    "typescript": "^5.8.2"
   }
 }

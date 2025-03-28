@@ -2,9 +2,8 @@ import { stat } from "fs/promises";
 import ora from "ora";
 import { homedir } from "os";
 import { mkdir, writeFile, chmod } from "fs/promises";
-import { dirname, join } from "path";
-import debug from "debug";import { find } from "new-find-package-json";
-import editJsonFile from "edit-json-file";
+import { join } from "path";
+import debug from "debug";
 import ncc from "@vercel/ncc";
 
 const log = debug("sea");
@@ -142,30 +141,14 @@ export async function get_node_executable(
  */
 export async function nccPack(script_entry_path, temp_dir) {
   // 为ncc提供配置支持
-  const dir = dirname(script_entry_path);
-  const findPackageJson = find(dir);
-  const jsonInfo = await findPackageJson.next();
-  let file = null;
-  let typeOrigin = null;
-  if (!jsonInfo.done) {
-    file = editJsonFile(jsonInfo.value, {
-      autosave: true,
-      stringify_eol: true,
-    });
-    typeOrigin = file.get("type");
-    if (typeOrigin === "module") {
-      await spinner_log(`目标项目为 ${typeOrigin} 类型，临时修改为 commonjs 类型`, () => true);
-      file.set("type", "commonjs");
-    }
-  }
-
   try {
     const outputFilePath = `${temp_dir}\\index.js`;
     const { code } = await ncc(script_entry_path, {
       cache: false,
       minify: true,
-      target: "es2015",
+      target: "es2024",
       quiet: true,
+      esm: false,
     });
     await spinner_log(`执行 ncc 打包，输出 ncc 打包文件到 ${outputFilePath}`, async () => {
       await writeFile(outputFilePath, code);
@@ -173,10 +156,5 @@ export async function nccPack(script_entry_path, temp_dir) {
     return outputFilePath;
   } catch (error) {
     throw error;
-  } finally {
-    if (typeOrigin === "module") {
-      file.set("type", "module");
-      await spinner_log(`恢复目标项目为 ${typeOrigin} 类型`, () => true);
-    }
   }
 }
