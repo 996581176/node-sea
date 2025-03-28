@@ -137,9 +137,15 @@ export async function get_node_executable(
 
 /**打包ts/js到单文件
  * @param {string} script_entry_path 入口文件路径（包括入口文件名及扩展名）
- * @param {string} temp_dir 临时文件存放目录
+ * @param {object} options 临时文件存放目录
+ * @param {string} options.temp_dir 临时文件存放目录
+ * @param {boolean} [options.transpileOnly=false] ts文件仅转译，不进行检查。默认为 `false`
+ * @param {Array | {[key:string]:string}} [options.externals=[]] 外部依赖 参考 https://webpack.js.org/configuration/externals/#root
  */
-export async function nccPack(script_entry_path, temp_dir) {
+export async function nccPack(
+  script_entry_path,
+  { temp_dir, transpileOnly = false, externals = [] }
+) {
   // 为ncc提供配置支持
   try {
     const outputFilePath = `${temp_dir}\\index.js`;
@@ -149,6 +155,8 @@ export async function nccPack(script_entry_path, temp_dir) {
       target: "es2024",
       quiet: true,
       esm: false,
+      transpileOnly,
+      externals,
     });
     await spinner_log(`执行 ncc 打包，输出 ncc 打包文件到 ${outputFilePath}`, async () => {
       await writeFile(outputFilePath, code);

@@ -29,29 +29,24 @@ const exec = util.promisify(exec_origin);
  * @param {string} [options.nodeVersion="v20.11.0"] e.g. `v20.11.0`
  * @param {"none" | "full-icu" | "small-icu" | "system-icu"} [options.withIntl="small-icu"] node国际化版本，默认为 `small-icu`。https://nodejs.cn/api/intl.html#options-for-building-nodejs
  * @param {"x64"} [options.arch="x64"] 平台架构
- * @param {{[fileName:string]:string}} [options.assets] 资源文件 如何使用详见https://nodejs.cn/api/single-executable-applications.html#单个可执行应用-api
+ * @param {{[fileName:string]:string}} [options.assets] 资源文件 如何使用详见https://nodejs.cn/api/single-executable-applications.html#资源
+ * @param {boolean} [options.transpileOnly=false] ts文件仅转译，不进行检查。默认为 `false`
+ * @param {Array | {[key:string]:string}} [options.externals=[]] 外部依赖 参考 https://webpack.js.org/configuration/externals/#root
  */
 export default async function sea(
   script_entry_path,
   executable_path,
   {
-    disableExperimentalSEAWarning,
-    useSnapshot,
-    useCodeCache,
-    useSystemNode,
-    nodeVersion,
-    withIntl,
-    arch,
-    assets,
-  } = {
-    disableExperimentalSEAWarning: true,
-    useSnapshot: false,
-    useCodeCache: false,
-    useSystemNode: true,
-    nodeVersion: "v20.11.0",
-    withIntl: "small-icu",
-    arch: "x64",
-    assets: undefined,
+    disableExperimentalSEAWarning = true,
+    useSnapshot = false,
+    useCodeCache = false,
+    useSystemNode = true,
+    nodeVersion = "v20.11.0",
+    withIntl = "small-icu",
+    arch = "x64",
+    assets = undefined,
+    transpileOnly = false,
+    externals = [],
   }
 ) {
   const startDir = process.cwd();
@@ -108,7 +103,7 @@ export default async function sea(
   process.chdir(temp_dir);
   try {
     /** 调用ncc打包文件 */
-    const packFilePath = await nccPack(script_entry_path, temp_dir);
+    const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly, externals });
     if (!packFilePath) return;
     // Create a configuration file building a blob that can be injected into the single executable application
     const preparation_blob_path = join(temp_dir, "sea-prep.blob");
