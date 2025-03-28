@@ -2,10 +2,11 @@
   "name": "@northegg/node-sea",
   "version": "0.0.17",
   "description": "NodeJS SEA打包工具",
-  "main": "./src/index.js",
+  "main": "./build/index.js",
   "type": "module",
   "scripts": {
-    "test": "node example.js"
+    "test": "node example.js",
+    "build": "tsc"
   },
   "keywords": [
     "NodeJS",
@@ -25,5 +26,9 @@
     "ora": "^8.2.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/node": "^22.13.14"
   }
 }

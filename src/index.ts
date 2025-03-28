@@ -16,27 +16,51 @@ import { randomUUID } from "crypto";
 // promisify exec, let exec block until the process exits
 const exec = util.promisify(exec_origin);
 
-/**从入口脚本创建单个可执行应用程序（SEA）注意：未对macOS二进制文件签名做处理
- *
- * See also https://nodejs.cn/api/single-executable-applications.html
- * @param {string} script_entry_path 入口文件路径（包括入口文件名及扩展名）
- * @param {string} [executable_path] 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹
- * @param {object} options
- * @param {boolean} [options.disableExperimentalSEAWarning=true] 关闭实验性警告。默认为 `true`
- * @param {boolean} [options.useSnapshot=false] 启动快照支持。默认为 `false`，生成跨平台 SEA 时必须为 `false`。当 useSnapshot 为 true 时，主脚本必须调用 `v8.startupSnapshot.setDeserializeMainFunction()` API 来配置用户启动最终可执行文件时需要运行的代码
- * @param {boolean} [options.useCodeCache=false] V8 代码缓存支持。默认为 `false`，生成跨平台 SEA 时必须为 `false`。注意：当 useCodeCache 为 true 时，动态导入 `import()` 不起作用。
- * @param {boolean} [options.useSystemNode=true] 是否使用本地的node，如不启用则去 https://github.com/liudonghua123/node-sea/releases 页面根据 `platform`、`arch`、`nodeVersion`、`withIntl` 参数查找下载
- * @param {string} [options.nodeVersion="v20.11.0"] e.g. `v20.11.0`
- * @param {"none" | "full-icu" | "small-icu" | "system-icu"} [options.withIntl="small-icu"] node国际化版本，默认为 `small-icu`。https://nodejs.cn/api/intl.html#options-for-building-nodejs
- * @param {"x64"} [options.arch="x64"] 平台架构
- * @param {{[fileName:string]:string}} [options.assets] 资源文件 如何使用详见https://nodejs.cn/api/single-executable-applications.html#资源
- * @param {boolean} [options.transpileOnly=false] ts文件仅转译，不进行检查。默认为 `false`
- * @param {Array | {[key:string]:string}} [options.externals=[]] 外部依赖 参考 https://webpack.js.org/configuration/externals/#root
- */
+type Options = {
+  /** 关闭实验性警告。默认为 `true` */
+  disableExperimentalSEAWarning?: boolean;
+  /**启动快照支持。默认为 `false`，生成跨平台 SEA 时必须为 `false`。
+   *
+   * 当 useSnapshot 为 `true` 时，主脚本必须调用 `v8.startupSnapshot.setDeserializeMainFunction()` API 来配置用户启动最终可执行文件时需要运行的代码
+   */
+  useSnapshot?: boolean;
+  /**V8 代码缓存支持。默认为 `false`，生成跨平台 SEA 时必须为 `false`。
+   *
+   * 注意：当 useCodeCache 为 true 时，动态导入 `import()` 不起作用。
+   * */
+  useCodeCache?: boolean;
+  /** 是否使用本地的node，默认为 `true`
+   *
+   * 如不使用本地的node则去 https://github.com/liudonghua123/node-sea/releases 页面根据 `platform`、`arch`、`nodeVersion`、`withIntl` 参数查找下载
+   * */
+  useSystemNode?: boolean;
+  /** 要下载的 node 版本，默认为 `v20.11.0` */
+  nodeVersion?: string;
+  /**node国际化版本，默认为 `small-icu`。
+   * @see https://nodejs.cn/api/intl.html#options-for-building-nodejs
+   */
+  withIntl?: "none" | "full-icu" | "small-icu" | "system-icu";
+  /** node 架构，默认为 `x64` */
+  arch?: "x64";
+  /**资源文件
+   * @see https://nodejs.cn/api/single-executable-applications.html#资源
+   */
+  assets?: { [fileName: string]: string };
+  /** ts文件仅转译，不进行检查。默认为 `false` */
+  transpileOnly?: boolean;
+  /**外部依赖
+   * @see https://webpack.js.org/configuration/externals/#root
+   */
+  externals?: Array<any> | { [key: string]: string };
+};
 export default async function sea(
-  script_entry_path,
-  executable_path,
-  {
+  /** 入口文件路径（包括入口文件名及扩展名） */
+  script_entry_path: string,
+  /** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
+  executable_path?: string,
+  options: Options = {}
+) {
+  const {
     disableExperimentalSEAWarning = true,
     useSnapshot = false,
     useCodeCache = false,
@@ -47,8 +71,7 @@ export default async function sea(
     assets = undefined,
     transpileOnly = false,
     externals = [],
-  } = {}
-) {
+  } = options;
   const startDir = process.cwd();
   // normalize the script_entry_path and executable_path
   script_entry_path = resolve(process.cwd(), script_entry_path);
@@ -58,14 +81,15 @@ export default async function sea(
   } else {
     console.warn("使用默认输出目录");
     executable_path = resolve(
-      dirname(process.argv[1]),
+      dirname(process.argv[1]!),
       `./dist/${basename(script_entry_path, extname(script_entry_path))}.exe`
     );
+
     if (await is_directory_exists(dirname(executable_path))) {
       console.warn("默认输出目录 dist 已存在");
     } else {
       await spinner_log("创建输出文件目录 dist", async () => {
-        await mkdir(dirname(executable_path));
+        await mkdir(dirname(executable_path!));
       });
     }
   }

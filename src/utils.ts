@@ -4,16 +4,13 @@ import { homedir } from "os";
 import { mkdir, writeFile, chmod } from "fs/promises";
 import { join } from "path";
 import debug from "debug";
+// @ts-ignore
 import ncc from "@vercel/ncc";
 
 const log = debug("sea");
 
-/**
- * Check if file exists
- * @param {string} path
- * @returns
- */
-export async function is_file_exists(path) {
+/** Check if file exists */
+export async function is_file_exists(path: string) {
   try {
     return (await stat(path)).isFile();
   } catch (e) {
@@ -21,12 +18,8 @@ export async function is_file_exists(path) {
   }
 }
 
-/**
- * Check if directory exists
- * @param {string} path
- * @returns
- */
-export async function is_directory_exists(path) {
+/** Check if directory exists */
+export async function is_directory_exists(path: string) {
   try {
     return (await stat(path)).isDirectory();
   } catch (e) {
@@ -34,14 +27,8 @@ export async function is_directory_exists(path) {
   }
 }
 
-/**
- * Show spinner while running async_callback
- * @typedef {() => Promise<any>} async_callback
- * @param {string} message
- * @param {async_callback} [callback]
- * @returns
- */
-export async function spinner_log(message, callback) {
+/** Show spinner while running async_callback */
+export async function spinner_log(message: string, callback: () => Promise<any>) {
   const spinner = ora(message).start();
   try {
     const result = await callback();
@@ -53,22 +40,34 @@ export async function spinner_log(message, callback) {
   }
 }
 
-/**Get node executable path
- * @param {object} options
- * @param {boolean} [options.useSystemNode=true] 是否使用本地的node，如不启用则去 https://github.com/liudonghua123/node-sea/releases 页面根据 `platform`、`arch`、`nodeVersion`、`withIntl` 参数查找下载
- * @param {string} [options.nodeVersion="v20.11.0"] e.g. `v20.11.0`
- * @param {"none" | "full-icu" | "small-icu" | "system-icu"} [options.withIntl="small-icu"] node国际化版本，默认为 `small-icu`。https://nodejs.cn/api/intl.html#options-for-building-nodejs
- * @param {"x64"} [options.arch] 平台架构
- * @returns {Promise<string>} the path to node executable
- */
+/** Get node executable path */
 export async function get_node_executable(
-  { useSystemNode, nodeVersion, arch, withIntl } = {
+  {
+    useSystemNode,
+    nodeVersion,
+    arch,
+    withIntl,
+  }: {
+    /** 是否使用本地的node，默认为 `true`
+     *
+     * 如不使用本地的node则去 https://github.com/liudonghua123/node-sea/releases 页面根据 `platform`、`arch`、`nodeVersion`、`withIntl` 参数查找下载
+     * */
+    useSystemNode?: boolean;
+    /** 要下载的 node 版本，默认为 `v20.11.0` */
+    nodeVersion?: string;
+    /**node国际化版本，默认为 `small-icu`。
+     * @see https://nodejs.cn/api/intl.html#options-for-building-nodejs
+     */
+    withIntl?: "none" | "full-icu" | "small-icu" | "system-icu";
+    /** node 架构，默认为 `x64` */
+    arch?: "x64";
+  } = {
     useSystemNode: true,
     nodeVersion: "v20.11.0",
     arch: "x64",
     withIntl: "small-icu",
   }
-) {
+): Promise<string> {
   if (useSystemNode) {
     return process.execPath;
   }
@@ -84,7 +83,7 @@ export async function get_node_executable(
   }
   // node-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.event.inputs.node_tag }}-with-intl-${{ matrix.with-intl }}
   const node_executable_filename = `node-${
-    platform_mapping[process.platform]
+    platform_mapping[process.platform as keyof typeof platform_mapping]
   }-${arch}-v${nodeVersion}-with-intl-${withIntl}${process.platform === "win32" ? ".exe" : ""}`;
   const expected_node_executable_path = join(cache_directory, node_executable_filename);
   if (await is_file_exists(expected_node_executable_path)) {
@@ -94,7 +93,7 @@ export async function get_node_executable(
   log(`从 github release 或指定的镜像 url 下载节点可执行文件`);
   // download the node executable from github release or specified mirror url named NODE_SEA_NODE_MIRROR_URL
   const download_url_prefix =
-    process.env.NODE_SEA_NODE_MIRROR_URL ??
+    process.env["NODE_SEA_NODE_MIRROR_URL"] ??
     `https://github.com/liudonghua123/node-sea/releases/download/node/`;
   try {
     const download_spinner = ora(`[ 0.00%] 下载 node 可执行文件 ...`).start();
@@ -135,17 +134,24 @@ export async function get_node_executable(
   }
 }
 
-/**打包ts/js到单文件
- * @param {string} script_entry_path 入口文件路径（包括入口文件名及扩展名）
- * @param {object} options 临时文件存放目录
- * @param {string} options.temp_dir 临时文件存放目录
- * @param {boolean} [options.transpileOnly=false] ts文件仅转译，不进行检查。默认为 `false`
- * @param {Array | {[key:string]:string}} [options.externals=[]] 外部依赖 参考 https://webpack.js.org/configuration/externals/#root
- */
+type Options = {
+  /** 临时文件存放目录 */
+  temp_dir: string;
+  /** ts文件仅转译，不进行检查。默认为 `false` */
+  transpileOnly?: boolean;
+  /**外部依赖
+   * @see https://webpack.js.org/configuration/externals/#root
+   */
+  externals?: Array<any> | { [key: string]: string };
+};
+
+/** 打包ts/js到单文件 */
 export async function nccPack(
-  script_entry_path,
-  { temp_dir, transpileOnly = false, externals = [] }
+  /** 入口文件路径（包括入口文件名及扩展名） */
+  script_entry_path: string,
+  options: Options
 ) {
+  const { temp_dir, transpileOnly = false, externals = [] } = options;
   // 为ncc提供配置支持
   try {
     const outputFilePath = `${temp_dir}\\index.js`;
