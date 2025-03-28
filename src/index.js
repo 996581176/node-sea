@@ -47,7 +47,7 @@ export default async function sea(
     assets = undefined,
     transpileOnly = false,
     externals = [],
-  }
+  } = {}
 ) {
   const startDir = process.cwd();
   // normalize the script_entry_path and executable_path
