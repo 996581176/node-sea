@@ -11,6 +11,7 @@ import {
 } from "./utils.js";
 import ora from "ora";
 import { rimraf } from "rimraf";
+import { randomUUID } from "crypto";
 
 // promisify exec, let exec block until the process exits
 const exec = util.promisify(exec_origin);
@@ -94,8 +95,9 @@ export default async function sea(
   const node_executable = await get_node_executable({ useSystemNode, nodeVersion, withIntl, arch });
   // copy the executable as the output executable
   await copyFile(node_executable, executable_path);
+  const uuid = randomUUID();
   // create a temporary directory for the processing work
-  const temp_dir = resolve(dirname(executable_path), "./.temp");
+  const temp_dir = resolve(dirname(executable_path), `./${uuid}`);
   // create the temporary directory if it does not exist
   if (!(await is_directory_exists(temp_dir))) {
     await spinner_log(`创建临时目录 ${temp_dir}`, async () => {

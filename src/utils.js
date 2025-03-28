@@ -138,7 +138,7 @@ export async function get_node_executable(
 
 /**打包ts/js到单文件
  * @param {string} script_entry_path 入口文件路径（包括入口文件名及扩展名）
- * @param {string} temp_dir 零时文件存放目录
+ * @param {string} temp_dir 临时文件存放目录
  */
 export async function nccPack(script_entry_path, temp_dir) {
   // 为ncc提供配置支持
