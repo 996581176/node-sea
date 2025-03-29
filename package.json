@@ -22,13 +22,16 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/ncc": "^0.38.3",
+    "adm-zip": "^0.5.16",
     "debug": "^4.4.0",
     "ora": "^8.2.0",
     "postject": "1.0.0-alpha.6",
     "rimraf": "^6.0.1",
+    "tar": "^7.4.3",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/debug": "^4.1.12",
     "@types/node": "^22.13.14"
   }

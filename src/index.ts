@@ -33,27 +33,33 @@ type Options = {
   useCodeCache?: boolean;
   /** 是否使用本地的node，默认为 `true`
    *
-   * 如不使用本地的node则去 https://github.com/liudonghua123/node-sea/releases 页面根据 `platform`、`arch`、`nodeVersion`、`withIntl` 参数查找下载
+   * 如不使用本地的 node 则去 node 官方或者提供的镜像地址根据 `nodeVersion`、`arch`、`target` 参数查找下载
    * */
   useSystemNode?: boolean;
-  /** 要下载的 node 版本，默认为 `v20.11.0` */
+  /** 要下载的 node 版本，默认为 `22.14.0` */
   nodeVersion?: string;
-  /**node国际化版本，默认为 `small-icu`。
-   * @see https://nodejs.cn/api/intl.html#options-for-building-nodejs
-   */
-  withIntl?: "none" | "full-icu" | "small-icu" | "system-icu";
   /** node 架构，默认为 `x64` */
-  arch?: "x64";
+  arch?: "x64" | "arm64";
+  /** 目标平台，默认为当前平台 */
+  target?: "win" | "darwin" | "linux";
   /**资源文件
    * @see https://nodejs.cn/api/single-executable-applications.html#资源
    */
-  assets?: { [fileName: string]: string };
+  assets?: {
+    [fileName: string]: string;
+  };
   /** ts文件仅转译，不进行检查。默认为 `false` */
   transpileOnly?: boolean;
   /**外部依赖
    * @see https://webpack.js.org/configuration/externals/#root
    */
-  externals?: Array<any> | { [key: string]: string };
+  externals?:
+    | Array<any>
+    | {
+        [key: string]: string;
+      };
+  /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
+  mirrorUrl?: string;
 };
 export default async function sea(
   /** 入口文件路径（包括入口文件名及扩展名） */
@@ -67,12 +73,15 @@ export default async function sea(
     useSnapshot = false,
     useCodeCache = false,
     useSystemNode = true,
-    nodeVersion = "v20.11.0",
-    withIntl = "small-icu",
+    nodeVersion = "22.14.0",
     arch = "x64",
+    target = process.platform.includes("win")
+      ? "win"
+      : (process.platform as "win" | "darwin" | "linux"),
     assets = undefined,
     transpileOnly = false,
     externals = [],
+    mirrorUrl,
   } = options;
   const startDir = process.cwd();
   // normalize the script_entry_path and executable_path
@@ -84,7 +93,9 @@ export default async function sea(
     console.warn("使用默认输出目录");
     executable_path = resolve(
       dirname(process.argv[1]!),
-      `./dist/${basename(script_entry_path, extname(script_entry_path))}.exe`
+      `./dist/${basename(script_entry_path, extname(script_entry_path))}${
+        target === "win" ? ".exe" : ""
+      }`
     );
 
     if (await is_directory_exists(dirname(executable_path))) {
@@ -112,10 +123,6 @@ export default async function sea(
   if (process.version < "v20.0.0") {
     throw new Error(`系统 Node 版本 ${process.version} 太老了, 至少需要 v20.0.0`);
   }
-  // get the node executable
-  const node_executable = await get_node_executable({ useSystemNode, nodeVersion, withIntl, arch });
-  // copy the executable as the output executable
-  await copyFile(node_executable, executable_path);
   const uuid = randomUUID();
   // create a temporary directory for the processing work
   const temp_dir = resolve(dirname(executable_path), `./${uuid}`);
@@ -125,9 +132,25 @@ export default async function sea(
       await mkdir(temp_dir);
     });
   }
-  // change working directory to temp_dir
-  process.chdir(temp_dir);
   try {
+    // 获取 node 可执行文件
+    const node_executable: string = await spinner_log(
+      `${useSystemNode ? "使用系统安装的 node" : `下载 node-v${nodeVersion}-${target}-${arch}`}`,
+      async () => {
+        return await get_node_executable(
+          temp_dir,
+          useSystemNode,
+          nodeVersion,
+          target,
+          arch,
+          mirrorUrl
+        );
+      }
+    );
+    // 复制可执行文件作为输出可执行文件
+    await copyFile(node_executable, executable_path);
+    // 将工作目录更改为temp_dir
+    process.chdir(temp_dir);
     /** 调用ncc打包文件 */
     const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly, externals });
     if (!packFilePath) return;
@@ -151,7 +174,7 @@ export default async function sea(
     });
     // Inject the blob into the copied binary by running postject
     await spinner_log(`将 blob 注入 ${basename(executable_path)}`, async () => {
-      const blob = readFile(preparation_blob_path);
+      const blob = await readFile(preparation_blob_path);
       await inject(executable_path, "NODE_SEA_BLOB", blob, {
         machoSegmentName: "NODE_SEA",
         sentinelFuse: "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",

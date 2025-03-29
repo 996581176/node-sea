@@ -1,11 +1,13 @@
 import { exec as exec_origin } from "child_process";
 import util from "util";
 import { basename, dirname, extname, join, resolve } from "path";
-import { copyFile, writeFile, mkdir } from "fs/promises";
+import { copyFile, writeFile, mkdir, readFile } from "fs/promises";
 import { is_directory_exists, is_file_exists, spinner_log, get_node_executable, nccPack, } from "./utils.js";
 import ora from "ora";
 import { rimraf } from "rimraf";
 import { randomUUID } from "crypto";
+// @ts-ignore
+import { inject } from "postject";
 // promisify exec, let exec block until the process exits
 const exec = util.promisify(exec_origin);
 export default async function sea(
@@ -13,7 +15,9 @@ export default async function sea(
 script_entry_path, 
 /** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
 executable_path, options = {}) {
-    const { disableExperimentalSEAWarning = true, useSnapshot = false, useCodeCache = false, useSystemNode = true, nodeVersion = "v20.11.0", withIntl = "small-icu", arch = "x64", assets = undefined, transpileOnly = false, externals = [], } = options;
+    const { disableExperimentalSEAWarning = true, useSnapshot = false, useCodeCache = false, useSystemNode = true, nodeVersion = "22.14.0", arch = "x64", target = process.platform.includes("win")
+        ? "win"
+        : process.platform, assets = undefined, transpileOnly = false, externals = [], mirrorUrl, } = options;
     const startDir = process.cwd();
     // normalize the script_entry_path and executable_path
     script_entry_path = resolve(process.cwd(), script_entry_path);
@@ -22,7 +26,7 @@ executable_path, options = {}) {
     }
     else {
         console.warn("使用默认输出目录");
-        executable_path = resolve(dirname(process.argv[1]), `./dist/${basename(script_entry_path, extname(script_entry_path))}.exe`);
+        executable_path = resolve(dirname(process.argv[1]), `./dist/${basename(script_entry_path, extname(script_entry_path))}${target === "win" ? ".exe" : ""}`);
         if (await is_directory_exists(dirname(executable_path))) {
             console.warn("默认输出目录 dist 已存在");
         }
@@ -48,10 +52,6 @@ executable_path, options = {}) {
     if (process.version < "v20.0.0") {
         throw new Error(`系统 Node 版本 ${process.version} 太老了, 至少需要 v20.0.0`);
     }
-    // get the node executable
-    const node_executable = await get_node_executable({ useSystemNode, nodeVersion, withIntl, arch });
-    // copy the executable as the output executable
-    await copyFile(node_executable, executable_path);
     const uuid = randomUUID();
     // create a temporary directory for the processing work
     const temp_dir = resolve(dirname(executable_path), `./${uuid}`);
@@ -61,9 +61,15 @@ executable_path, options = {}) {
             await mkdir(temp_dir);
         });
     }
-    // change working directory to temp_dir
-    process.chdir(temp_dir);
     try {
+        // 获取 node 可执行文件
+        const node_executable = await spinner_log(`${useSystemNode ? "使用系统安装的 node" : `下载 node-v${nodeVersion}-${target}-${arch}`}`, async () => {
+            return await get_node_executable(temp_dir, useSystemNode, nodeVersion, target, arch, mirrorUrl);
+        });
+        // 复制可执行文件作为输出可执行文件
+        await copyFile(node_executable, executable_path);
+        // 将工作目录更改为temp_dir
+        process.chdir(temp_dir);
         /** 调用ncc打包文件 */
         const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly, externals });
         if (!packFilePath)
@@ -88,7 +94,11 @@ executable_path, options = {}) {
         });
         // Inject the blob into the copied binary by running postject
         await spinner_log(`将 blob 注入 ${basename(executable_path)}`, async () => {
-            await exec(`npx postject "${executable_path}" NODE_SEA_BLOB "${preparation_blob_path}" --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`);
+            const blob = await readFile(preparation_blob_path);
+            await inject(executable_path, "NODE_SEA_BLOB", blob, {
+                machoSegmentName: "NODE_SEA",
+                sentinelFuse: "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
+            });
         });
         // Remove the temporary directory
         await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
