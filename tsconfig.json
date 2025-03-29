@@ -10,7 +10,7 @@
    * 入口文件,在指定目录时,只有指定目录下的文件才会被ts扫描
    * 此时在指定目录外的类型文件会不起作用,将自定义的 .d.ts 文件或类型文件存放路径放入这里面即可
    */
-  "include": ["./src/**/*.ts"],
+  "include": ["src"],
   "compilerOptions": {
     // ---------------------可能会修改的配置----------------------
 
@@ -32,7 +32,7 @@
     // 是否生成声明文件
     "declaration": true,
     // 生成的声明文件路径
-    "declarationDir": "./build/types",
+    "declarationDir": "./build",
 
     // 不要输出js文件
     "noEmit": false,
@@ -160,12 +160,12 @@
 
     // TypeScript 将会在当你写的某些代码不能被单文件转译的过程正确处理时警告你
     "isolatedModules": true
-  },
+  }
   // 被包含文件,少量文件可以用,文件数量多还是使用 include 字段进行匹配
   // "files": ["core.ts"],
 
   /**
    * 指定 include 中要被排除的文件(夹)
    */
-  "exclude": ["./test/**/*"]
+  // "exclude": ["./test/**/*"]
 }
