@@ -137,7 +137,7 @@
     "resolveJsonModule": true,
 
     // 删除注释
-    "removeComments": true,
+    "removeComments": false,
 
     // 保留 const和 enum声明
     "preserveConstEnums": true,

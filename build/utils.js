@@ -4,8 +4,10 @@ import { homedir } from "os";
 import { mkdir, writeFile, chmod } from "fs/promises";
 import { join } from "path";
 import debug from "debug";
+// @ts-ignore
 import ncc from "@vercel/ncc";
 const log = debug("sea");
+/** Check if file exists */
 export async function is_file_exists(path) {
     try {
         return (await stat(path)).isFile();
@@ -14,6 +16,7 @@ export async function is_file_exists(path) {
         return false;
     }
 }
+/** Check if directory exists */
 export async function is_directory_exists(path) {
     try {
         return (await stat(path)).isDirectory();
@@ -22,6 +25,7 @@ export async function is_directory_exists(path) {
         return false;
     }
 }
+/** Show spinner while running async_callback */
 export async function spinner_log(message, callback) {
     const spinner = ora(message).start();
     try {
@@ -34,6 +38,7 @@ export async function spinner_log(message, callback) {
         throw e;
     }
 }
+/** Get node executable path */
 export async function get_node_executable({ useSystemNode, nodeVersion, arch, withIntl, } = {
     useSystemNode: true,
     nodeVersion: "v20.11.0",
@@ -48,10 +53,12 @@ export async function get_node_executable({ useSystemNode, nodeVersion, arch, wi
         linux: "linux",
         darwin: "macos",
     };
+    // check if the node_executable exists in the local cache directory in ~/.node-sea
     const cache_directory = join(homedir(), ".node-sea");
     if (!(await is_directory_exists(cache_directory))) {
         await mkdir(cache_directory, { recursive: true });
     }
+    // node-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.event.inputs.node_tag }}-with-intl-${{ matrix.with-intl }}
     const node_executable_filename = `node-${platform_mapping[process.platform]}-${arch}-v${nodeVersion}-with-intl-${withIntl}${process.platform === "win32" ? ".exe" : ""}`;
     const expected_node_executable_path = join(cache_directory, node_executable_filename);
     if (await is_file_exists(expected_node_executable_path)) {
@@ -59,6 +66,7 @@ export async function get_node_executable({ useSystemNode, nodeVersion, arch, wi
         return expected_node_executable_path;
     }
     log(`从 github release 或指定的镜像 url 下载节点可执行文件`);
+    // download the node executable from github release or specified mirror url named NODE_SEA_NODE_MIRROR_URL
     const download_url_prefix = process.env["NODE_SEA_NODE_MIRROR_URL"] ??
         `https://github.com/liudonghua123/node-sea/releases/download/node/`;
     try {
@@ -82,10 +90,10 @@ export async function get_node_executable({ useSystemNode, nodeVersion, arch, wi
             download_spinner.text = `[${((received_length / content_length) * 100).toFixed(2)}%] Downloading node executable ...`;
         }
         download_spinner.succeed(`[100.00%] Download node executable completed!`);
-        let chunks_all = new Uint8Array(received_length);
+        let chunks_all = new Uint8Array(received_length); // (4.1)
         let position = 0;
         for (let chunk of chunks) {
-            chunks_all.set(chunk, position);
+            chunks_all.set(chunk, position); // (4.2)
             position += chunk.length;
         }
         await writeFile(expected_node_executable_path, chunks_all);
@@ -96,8 +104,12 @@ export async function get_node_executable({ useSystemNode, nodeVersion, arch, wi
         throw new Error(`Failed to download node executable from ${download_url_prefix}${node_executable_filename}`);
     }
 }
-export async function nccPack(script_entry_path, options) {
+/** 打包ts/js到单文件 */
+export async function nccPack(
+/** 入口文件路径（包括入口文件名及扩展名） */
+script_entry_path, options) {
     const { temp_dir, transpileOnly = false, externals = [] } = options;
+    // 为ncc提供配置支持
     try {
         const outputFilePath = `${temp_dir}\\index.js`;
         const { code } = await ncc(script_entry_path, {
