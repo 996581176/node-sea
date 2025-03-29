@@ -14,10 +14,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/996581176/node-sea"
+    "url": "https://github.com/northegg/node-sea"
   },
-  "homepage": "https://github.com/996581176/node-sea",
-  "bugs": "https://github.com/996581176/node-sea/issues",
+  "homepage": "https://www.npmjs.com/package/@northegg/node-seas",
+  "bugs": "https://github.com/northegg/node-sea/issues",
   "author": "NorthEgg",
   "license": "MIT",
   "dependencies": {
