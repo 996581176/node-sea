@@ -24,6 +24,7 @@
     "@vercel/ncc": "^0.38.3",
     "debug": "^4.4.0",
     "ora": "^8.2.0",
+    "postject": "1.0.0-alpha.6",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.2"
   },

@@ -1,7 +1,7 @@
 import { exec as exec_origin } from "child_process";
 import util from "util";
 import { basename, dirname, extname, join, resolve } from "path";
-import { copyFile, writeFile, mkdir } from "fs/promises";
+import { copyFile, writeFile, mkdir, readFile } from "fs/promises";
 import {
   is_directory_exists,
   is_file_exists,
@@ -12,6 +12,8 @@ import {
 import ora from "ora";
 import { rimraf } from "rimraf";
 import { randomUUID } from "crypto";
+// @ts-ignore
+import { inject } from "postject";
 
 // promisify exec, let exec block until the process exits
 const exec = util.promisify(exec_origin);
@@ -149,9 +151,11 @@ export default async function sea(
     });
     // Inject the blob into the copied binary by running postject
     await spinner_log(`将 blob 注入 ${basename(executable_path)}`, async () => {
-      await exec(
-        `npx postject "${executable_path}" NODE_SEA_BLOB "${preparation_blob_path}" --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2`
-      );
+      const blob = readFile(preparation_blob_path);
+      await inject(executable_path, "NODE_SEA_BLOB", blob, {
+        machoSegmentName: "NODE_SEA",
+        sentinelFuse: "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
+      });
     });
     // Remove the temporary directory
     await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
