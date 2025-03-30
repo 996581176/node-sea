@@ -1,6 +1,6 @@
 {
   "name": "@northegg/node-sea",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "NodeJS SEA打包工具",
   "main": "./build/index.js",
   "type": "module",
