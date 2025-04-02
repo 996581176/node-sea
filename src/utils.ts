@@ -61,7 +61,7 @@ export async function nccPack(
   const { temp_dir, transpileOnly = false, externals = [] } = options;
   // 为ncc提供配置支持
   try {
-    const outputFilePath = `${temp_dir}\\index.js`;
+    const outputFilePath = join(temp_dir, "index.js");
     const { code } = await ncc(script_entry_path, {
       cache: false,
       minify: true,
