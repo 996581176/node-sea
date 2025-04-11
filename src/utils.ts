@@ -46,10 +46,6 @@ type Options = {
   temp_dir: string;
   /** ts文件仅转译，不进行检查。默认为 `false` */
   transpileOnly?: boolean;
-  /**外部依赖
-   * @see https://webpack.js.org/configuration/externals/#root
-   */
-  externals?: Array<any> | { [key: string]: string };
 };
 
 /** 打包ts/js到单文件 */
@@ -58,7 +54,7 @@ export async function nccPack(
   script_entry_path: string,
   options: Options
 ) {
-  const { temp_dir, transpileOnly = false, externals = [] } = options;
+  const { temp_dir, transpileOnly = false } = options;
   // 为ncc提供配置支持
   try {
     const outputFilePath = join(temp_dir, "index.js");
@@ -69,7 +65,6 @@ export async function nccPack(
       quiet: true,
       esm: false,
       transpileOnly,
-      externals,
     });
     await spinner_log(`执行 ncc 打包，输出 ncc 打包文件到 ${outputFilePath}`, async () => {
       await writeFile(outputFilePath, code);

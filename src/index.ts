@@ -50,14 +50,6 @@ type Options = {
   };
   /** ts文件仅转译，不进行检查。默认为 `false` */
   transpileOnly?: boolean;
-  /**外部依赖
-   * @see https://webpack.js.org/configuration/externals/#root
-   */
-  externals?:
-    | Array<any>
-    | {
-        [key: string]: string;
-      };
   /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
   mirrorUrl?: string;
 };
@@ -80,7 +72,6 @@ export default async function sea(
       : (process.platform as "win" | "darwin" | "linux"),
     assets = undefined,
     transpileOnly = false,
-    externals = [],
     mirrorUrl,
   } = options;
   const startDir = process.cwd();
@@ -152,7 +143,7 @@ export default async function sea(
     // 将工作目录更改为temp_dir
     process.chdir(temp_dir);
     /** 调用ncc打包文件 */
-    const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly, externals });
+    const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly });
     if (!packFilePath) return;
     // Create a configuration file building a blob that can be injected into the single executable application
     const preparation_blob_path = join(temp_dir, "sea-prep.blob");
