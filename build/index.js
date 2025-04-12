@@ -12,12 +12,11 @@ import { inject } from "postject";
 const exec = util.promisify(exec_origin);
 export default async function sea(
 /** 入口文件路径（包括入口文件名及扩展名） */
-script_entry_path, 
-/** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
-executable_path, options = {}) {
+script_entry_path, options = {}) {
     const { disableExperimentalSEAWarning = true, useSnapshot = false, useCodeCache = false, useSystemNode = true, nodeVersion = "22.14.0", arch = "x64", target = process.platform.includes("win")
         ? "win"
-        : process.platform, assets = undefined, transpileOnly = false, externals = [], mirrorUrl, } = options;
+        : process.platform, assets = undefined, transpileOnly = false, mirrorUrl, } = options;
+    let { executable_path } = options;
     const startDir = process.cwd();
     // normalize the script_entry_path and executable_path
     script_entry_path = resolve(process.cwd(), script_entry_path);
@@ -71,7 +70,7 @@ executable_path, options = {}) {
         // 将工作目录更改为temp_dir
         process.chdir(temp_dir);
         /** 调用ncc打包文件 */
-        const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly, externals });
+        const packFilePath = await nccPack(script_entry_path, { temp_dir, transpileOnly });
         if (!packFilePath)
             return;
         // Create a configuration file building a blob that can be injected into the single executable application

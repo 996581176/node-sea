@@ -9,12 +9,6 @@ type Options = {
     temp_dir: string;
     /** ts文件仅转译，不进行检查。默认为 `false` */
     transpileOnly?: boolean;
-    /**外部依赖
-     * @see https://webpack.js.org/configuration/externals/#root
-     */
-    externals?: Array<any> | {
-        [key: string]: string;
-    };
 };
 /** 打包ts/js到单文件 */
 export declare function nccPack(

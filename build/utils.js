@@ -42,7 +42,7 @@ export async function spinner_log(message, callback) {
 export async function nccPack(
 /** 入口文件路径（包括入口文件名及扩展名） */
 script_entry_path, options) {
-    const { temp_dir, transpileOnly = false, externals = [] } = options;
+    const { temp_dir, transpileOnly = false } = options;
     // 为ncc提供配置支持
     try {
         const outputFilePath = join(temp_dir, "index.js");
@@ -53,7 +53,6 @@ script_entry_path, options) {
             quiet: true,
             esm: false,
             transpileOnly,
-            externals,
         });
         await spinner_log(`执行 ncc 打包，输出 ncc 打包文件到 ${outputFilePath}`, async () => {
             await writeFile(outputFilePath, code);

@@ -1,4 +1,6 @@
 type Options = {
+    /** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
+    executable_path?: string;
     /** 关闭实验性警告。默认为 `true` */
     disableExperimentalSEAWarning?: boolean;
     /**启动快照支持。默认为 `false`，生成跨平台 SEA 时必须为 `false`。
@@ -30,18 +32,10 @@ type Options = {
     };
     /** ts文件仅转译，不进行检查。默认为 `false` */
     transpileOnly?: boolean;
-    /**外部依赖
-     * @see https://webpack.js.org/configuration/externals/#root
-     */
-    externals?: Array<any> | {
-        [key: string]: string;
-    };
     /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
     mirrorUrl?: string;
 };
 export default function sea(
 /** 入口文件路径（包括入口文件名及扩展名） */
-script_entry_path: string, 
-/** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
-executable_path?: string, options?: Options): Promise<void>;
+script_entry_path: string, options?: Options): Promise<void>;
 export {};
