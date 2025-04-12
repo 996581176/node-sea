@@ -1,8 +1,9 @@
 import sea from "./build/index.js";
 
-sea("./test/index.ts", undefined, {
+sea("./test/index.ts", {
   transpileOnly: true,
   useSystemNode: true,
+  executable_name: "test",
 });
 
 // 使用下载的 node 二进制文件

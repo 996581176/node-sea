@@ -15,7 +15,7 @@ export default async function sea(
 script_entry_path, options = {}) {
     const { disableExperimentalSEAWarning = true, useSnapshot = false, useCodeCache = false, useSystemNode = true, nodeVersion = "22.14.0", arch = "x64", target = process.platform.includes("win")
         ? "win"
-        : process.platform, assets = undefined, transpileOnly = false, mirrorUrl, } = options;
+        : process.platform, assets = undefined, transpileOnly = false, mirrorUrl, executable_name, } = options;
     let { executable_path } = options;
     const startDir = process.cwd();
     // normalize the script_entry_path and executable_path
@@ -25,7 +25,7 @@ script_entry_path, options = {}) {
     }
     else {
         console.warn("使用默认输出目录");
-        executable_path = resolve(dirname(process.argv[1]), `./dist/${basename(script_entry_path, extname(script_entry_path))}${target === "win" ? ".exe" : ""}`);
+        executable_path = resolve(dirname(process.argv[1]), `./dist/${executable_name ? executable_name : basename(script_entry_path, extname(script_entry_path))}${target === "win" ? ".exe" : ""}`);
         if (await is_directory_exists(dirname(executable_path))) {
             console.warn("默认输出目录 dist 已存在");
         }

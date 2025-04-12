@@ -1,4 +1,6 @@
 type Options = {
+    /** 输出的可执行文件名（无需包含文件扩展名） */
+    executable_name?: string;
     /** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
     executable_path?: string;
     /** 关闭实验性警告。默认为 `true` */

@@ -19,6 +19,8 @@ import { inject } from "postject";
 const exec = util.promisify(exec_origin);
 
 type Options = {
+  /** 输出的可执行文件名（无需包含文件扩展名） */
+  executable_name?: string;
   /** 输出可执行文件路径（包括文件名及扩展名）。默认输出目录为 script_entry_path 目录下的 `dist` 文件夹，没有则会新建 `dist` 文件夹 */
   executable_path?: string;
   /** 关闭实验性警告。默认为 `true` */
@@ -73,6 +75,7 @@ export default async function sea(
     assets = undefined,
     transpileOnly = false,
     mirrorUrl,
+    executable_name,
   } = options;
   let { executable_path } = options;
   const startDir = process.cwd();
@@ -85,9 +88,9 @@ export default async function sea(
     console.warn("使用默认输出目录");
     executable_path = resolve(
       dirname(process.argv[1]!),
-      `./dist/${basename(script_entry_path, extname(script_entry_path))}${
-        target === "win" ? ".exe" : ""
-      }`
+      `./dist/${
+        executable_name ? executable_name : basename(script_entry_path, extname(script_entry_path))
+      }${target === "win" ? ".exe" : ""}`
     );
 
     if (await is_directory_exists(dirname(executable_path))) {
