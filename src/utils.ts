@@ -1,4 +1,4 @@
-import { stat } from "fs/promises";
+import { readFile, stat } from "fs/promises";
 import ora from "ora";
 import { homedir } from "os";
 import { mkdir, writeFile, chmod } from "fs/promises";
@@ -57,6 +57,7 @@ export async function nccPack(
   const { temp_dir, transpileOnly = false } = options;
   // 为ncc提供配置支持
   try {
+    handleImportMeta(script_entry_path);
     const outputFilePath = join(temp_dir, "index.js");
     const { code } = await ncc(script_entry_path, {
       cache: false,
@@ -140,4 +141,14 @@ export async function get_node_executable(
     const extracted = join(temp_dir, archiveBase);
     return join(extracted, "bin/node");
   }
+}
+
+/**对使用ESM脚本的 `import.meta.dirname` 和 `import.meta.filename` 进行处理
+ * @param script_entry_path 入口文件路径（包括入口文件名及扩展名）
+ */
+export async function handleImportMeta(script_entry_path: string) {
+  let string = await readFile(script_entry_path, "utf-8");
+  string = string.replaceAll("import.meta.dirname", "__dirname");
+  string = string.replaceAll("import.meta.filename", "__filename");
+  await writeFile(script_entry_path, string);
 }

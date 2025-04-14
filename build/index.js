@@ -15,7 +15,7 @@ export default async function sea(
 script_entry_path, options = {}) {
     const { disableExperimentalSEAWarning = true, useSnapshot = false, useCodeCache = false, useSystemNode = true, nodeVersion = "22.14.0", arch = "x64", target = process.platform.includes("win")
         ? "win"
-        : process.platform, assets = undefined, transpileOnly = false, mirrorUrl, executable_name, } = options;
+        : process.platform, assets = undefined, transpileOnly = false, mirrorUrl, executable_name, debug = false, } = options;
     let { executable_path } = options;
     const startDir = process.cwd();
     // normalize the script_entry_path and executable_path
@@ -100,17 +100,21 @@ script_entry_path, options = {}) {
             });
         });
         // Remove the temporary directory
-        await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
-            process.chdir(startDir);
-            await rimraf(temp_dir);
-        });
+        if (!debug) {
+            await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+                process.chdir(startDir);
+                await rimraf(temp_dir);
+            });
+        }
         ora("All done!").succeed();
     }
     catch (error) {
-        await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
-            process.chdir(startDir);
-            await rimraf(temp_dir);
-        });
+        if (!debug) {
+            await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+                process.chdir(startDir);
+                await rimraf(temp_dir);
+            });
+        }
         ora("打包出错!").fail();
         console.log(error);
     }

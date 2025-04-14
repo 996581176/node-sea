@@ -36,6 +36,8 @@ type Options = {
     transpileOnly?: boolean;
     /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
     mirrorUrl?: string;
+    /** 开启 `debug` 模式时不会删除临时文件夹 */
+    debug?: boolean;
 };
 export default function sea(
 /** 入口文件路径（包括入口文件名及扩展名） */

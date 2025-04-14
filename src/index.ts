@@ -56,6 +56,8 @@ type Options = {
   transpileOnly?: boolean;
   /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
   mirrorUrl?: string;
+  /** 开启 `debug` 模式时不会删除临时文件夹 */
+  debug?: boolean;
 };
 export default async function sea(
   /** 入口文件路径（包括入口文件名及扩展名） */
@@ -76,6 +78,7 @@ export default async function sea(
     transpileOnly = false,
     mirrorUrl,
     executable_name,
+    debug = false,
   } = options;
   let { executable_path } = options;
   const startDir = process.cwd();
@@ -176,16 +179,20 @@ export default async function sea(
       });
     });
     // Remove the temporary directory
-    await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
-      process.chdir(startDir);
-      await rimraf(temp_dir);
-    });
+    if (!debug) {
+      await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+        process.chdir(startDir);
+        await rimraf(temp_dir);
+      });
+    }
     ora("All done!").succeed();
   } catch (error) {
-    await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
-      process.chdir(startDir);
-      await rimraf(temp_dir);
-    });
+    if (!debug) {
+      await spinner_log(`删除临时目录 ${temp_dir}`, async () => {
+        process.chdir(startDir);
+        await rimraf(temp_dir);
+      });
+    }
     ora("打包出错!").fail();
     console.log(error);
   }
