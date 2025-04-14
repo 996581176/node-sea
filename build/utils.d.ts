@@ -36,7 +36,7 @@ arch?: "x64" | "arm64",
 /** node 镜像下载地址 如：https://registry.npmmirror.com/-/binary/node/ */
 mirrorUrl?: string): Promise<string>;
 /**对使用ESM脚本的 `import.meta.dirname` 和 `import.meta.filename` 进行处理
- * @param script_entry_path 入口文件路径（包括入口文件名及扩展名）
+ * @param code 需要打补丁的代码
  */
-export declare function handleImportMeta(script_entry_path: string): Promise<void>;
+export declare function handleImportMeta(code: string): Promise<string>;
 export {};
